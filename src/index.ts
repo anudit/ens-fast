@@ -25,6 +25,7 @@ server.register(helmet, { global: true })
     )
 
 const hashTable = new MegaHash();
+let hashTableCompiled = false;
 
 server.get('/resolve/ens/:ensName', async (req: FastifyRequest, reply: FastifyReply) => {
     const {ensName} = req.params as {ensName: string};
@@ -42,10 +43,15 @@ server.get('/resolve/ens/:ensName', async (req: FastifyRequest, reply: FastifyRe
 })
 
 server.get('/', async (req: FastifyRequest, reply: FastifyReply) => {
-    return reply.send({'hello': 'world'});
+    return reply.send({...hashTable.stats(), hashTableCompiled});
 })
 
 async function erecto(){
+
+    server.listen({ port: parseInt(process.env.PORT as string) || 3002, host: "0.0.0.0" }, (err, address)=>{
+        if (!err) console.log('🚀 Server is listening on', address);
+        else throw err;
+    });
 
     console.time('Compiled HashTable');
     console.log('Compiling HashTable');
@@ -61,12 +67,8 @@ async function erecto(){
     });
     emitter.on(bfj.events.end, () => {
         console.timeEnd('Compiled HashTable');
+        hashTableCompiled = true;
         console.log(hashTable.stats());
-        console.log('Starting Server');
-        server.listen({ port: parseInt(process.env.PORT as string) || 3002, host: "0.0.0.0" }, (err, address)=>{
-            if (!err) console.log('🚀 Server is listening on', address);
-            else throw err;
-        });
     });
 
 }

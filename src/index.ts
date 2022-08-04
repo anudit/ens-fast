@@ -50,7 +50,7 @@ async function erecto(){
     console.time('Compiled HashTable');
     console.log('Compiling HashTable');
 
-    const emitter = bfj.walk(createReadStream(path.join(__dirname, '../../data/ensToAdd.json')), {encoding:'utf8', flag:'r'});
+    const emitter = bfj.walk(createReadStream(path.join(__dirname, '../data/ensToAdd.json')), {encoding:'utf8', flag:'r'});
 
     let lastEnsName = '';
     emitter.on(bfj.events.property, (name: string) => {

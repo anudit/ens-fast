@@ -1,4 +1,20 @@
 {
     "schemaVersion": 2,
-    "templateId": "node/18"
+    "dockerfileLines": [
+        "FROM node:18-alpine",
+        "ENV PYTHONUNBUFFERED=1",
+        "RUN apk add --update --no-cache python3 gcc python3-dev && ln -sf python3 /usr/bin/python",
+        "RUN python3 -m ensurepip",
+        "RUN pip3 install --no-cache --upgrade pip setuptools",
+        "RUN mkdir -p /app",
+        "WORKDIR /app",
+        "COPY . /app",
+        "RUN npm install",
+        "RUN ls /app",
+        "ENV NODE_ENV production",
+        "ENV PORT 80",
+        "EXPOSE 80",
+        "CMD [ \"npm\", \"build\" ]",
+        "CMD [ \"npm\", \"start\" ]"
+      ]
 }

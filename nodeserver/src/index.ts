@@ -42,6 +42,11 @@ server.get('/resolve/ens/:ensName', async (req: FastifyRequest, reply: FastifyRe
     }
 })
 
+server.get('/echo/:st', async (req: FastifyRequest, reply: FastifyReply) => {
+    const {st} = req.params as {st: string};
+    return reply.send(st);
+})
+
 server.get('/', async (req: FastifyRequest, reply: FastifyReply) => {
     return reply.send({...hashTable.stats(), hashTableCompiled});
 })

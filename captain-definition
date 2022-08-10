@@ -1,20 +1,17 @@
 {
     "schemaVersion": 2,
     "dockerfileLines": [
-        "FROM node:18-alpine",
-        "ENV PYTHONUNBUFFERED=1",
-        "RUN apk add --update --no-cache python3 gcc make python3-dev && ln -sf python3 /usr/bin/python",
-        "RUN python3 -m ensurepip",
-        "RUN pip3 install --no-cache --upgrade pip setuptools",
+        "FROM rust:1.31",
+        "RUN apk add --update --no-cache git",
+        "RUN git clone https://github.com/anudit/ens-fast",
         "RUN mkdir -p /app",
+        "COPY /ens-fast/rustserver /app"
         "WORKDIR /app",
-        "COPY . /app",
-        "RUN npm install",
         "RUN ls /app",
         "ENV NODE_ENV production",
-        "ENV PORT 80",
-        "EXPOSE 80",
-        "CMD [ \"npm\", \"build\" ]",
-        "CMD [ \"npm\", \"start\" ]"
+        "ENV PORT 3000",
+        "EXPOSE 3000",
+        "CMD [ \"cargo\", \"build\" ]",
+        "CMD [ \"cargo\", \"run\" ]"
       ]
 }

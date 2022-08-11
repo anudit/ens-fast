@@ -1,4 +1,4 @@
-name: Build Test
+name: Node Build Test
 
 on:
   push:
@@ -31,7 +31,7 @@ jobs:
 
       - name: Install Workspace Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
-        run: pnpm install
+        run: cd nodeserver && pnpm install
 
       - name: Build Server
-        run: pnpm build
+        run: cd nodeserver && pnpm build

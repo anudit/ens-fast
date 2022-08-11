@@ -270,6 +270,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ens-fast"
+version = "0.1.0"
+dependencies = [
+ "rocket",
+ "serde_json",
+]
+
+[[package]]
 name = "fastrand"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -979,14 +987,6 @@ dependencies = [
  "time",
  "tokio",
  "uncased",
-]
-
-[[package]]
-name = "rustserver"
-version = "0.1.0"
-dependencies = [
- "rocket",
- "serde_json",
 ]
 
 [[package]]

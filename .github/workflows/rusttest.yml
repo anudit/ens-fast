@@ -16,7 +16,6 @@ jobs:
 
       - uses: actions-rs/install@v0.1
         with:
-          crate: ens-fast
           version: latest
           use-tool-cache: true
 

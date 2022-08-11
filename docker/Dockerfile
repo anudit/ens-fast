@@ -1,15 +1,15 @@
 FROM rust:alpine3.16 AS builder
 RUN apk add --update --no-cache git musl-dev protoc
-RUN mkdir -p /app
-COPY /ens-fast /app
-RUN ls /app
+RUN git clone https://github.com/anudit/ens-fast.git /app
 WORKDIR /app
 ENV PROFILE release
-CMD ["cargo", "build", "--release"]
+RUN cargo build --release
 
 FROM alpine
 WORKDIR /
-COPY --from=builder /usr/src/app/target/release/ens-fast .
+RUN mkdir -p ./data
+COPY --from=builder /app/data ./data
+COPY --from=builder /app/target/release/ens-fast .
 ENV PROFILE release
 ENV PORT 3000
 EXPOSE 3000

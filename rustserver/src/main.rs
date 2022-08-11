@@ -55,6 +55,7 @@ fn rocket() -> _ {
 
 }
 
+
 #[cfg(test)]
 mod test {
     use super::rocket;

@@ -18,6 +18,15 @@ jobs:
       - name: checkout
         uses: actions/checkout@v3
 
+      - name: ⚡ Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            rustserver/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/rustserver/Cargo.lock') }}
+
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly

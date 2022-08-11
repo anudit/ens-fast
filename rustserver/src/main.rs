@@ -6,7 +6,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use std::collections::HashMap;
-use std::time::{Instant};
+use std::time::Instant;
 
 use rocket::serde::json::{Value, json};
 use rocket::{State};
@@ -22,7 +22,13 @@ fn read_db<P: AsRef<Path>>(path: P) -> Result<Value, Box<dyn Error>> {
 
 #[get("/ens/resolve/<ens_name>")]
 fn ens_fn(ens_name: String, ens_to_address: &State<HashMap<String, String>>) -> Value  {
-    json!({"address": ens_to_address.get(&ens_name)})
+    let res = ens_to_address.get(&ens_name);
+
+    if res.is_some() {
+        json!({"address": res.unwrap()[1..43]})
+    } else {
+        json!({"address": res})
+    }
 }
 
 #[get("/ping")]

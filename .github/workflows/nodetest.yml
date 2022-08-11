@@ -4,11 +4,11 @@ on:
   push:
     branches: [ main ]
     paths:
-    - 'nodeserver/'
+    - 'nodeserver/**/**'
   pull_request:
     branches: [ main ]
     paths:
-    - 'nodeserver/'
+    - 'nodeserver/**/**'
 
 jobs:
   build:

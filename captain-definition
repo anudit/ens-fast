@@ -1,17 +1,4 @@
 {
     "schemaVersion": 2,
-    "dockerfileLines": [
-        "FROM rust:1.31",
-        "RUN apk add --update --no-cache git",
-        "RUN git clone https://github.com/anudit/ens-fast",
-        "RUN mkdir -p /app",
-        "COPY /ens-fast/rustserver /app"
-        "WORKDIR /app",
-        "RUN ls /app",
-        "ENV NODE_ENV production",
-        "ENV PORT 3000",
-        "EXPOSE 3000",
-        "CMD [ \"cargo\", \"build\" ]",
-        "CMD [ \"cargo\", \"run\" ]"
-      ]
+    "dockerfilePath": "./Dockerfile"
 }

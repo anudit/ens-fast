@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate rocket;
+extern crate dotenv;
 
+use dotenv::dotenv;
+use std::env;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
@@ -44,9 +47,17 @@ fn stats_fn(ens_to_address: &State<HashMap<String, String>>) -> Value  {
 #[launch]
 fn rocket() -> _ {
 
+    dotenv().ok();
+
+    let profile = match env::var("PROFILE") {
+        Ok(v) => v,
+        Err(_) => "dev".to_string()
+    };
+
     let mut start = Instant::now();
-    println!("Reading DB");
-    let payload = read_db("./../data/ensToAddMock.json").unwrap();
+    println!("Reading DB {:?}", profile);
+    let file_path = if profile == "dev" { "./data/ensToAddMock.json"} else {"./data/ensToAdd.json"};
+    let payload = read_db(file_path).unwrap();
     println!("Read Complete {:?}", start.elapsed());
 
     start = Instant::now();
@@ -68,11 +79,19 @@ mod test {
     use rocket::local::blocking::Client;
     use rocket::http::Status;
 
+
     #[test]
     fn ping() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
         let response = client.get(uri!(super::ping_fn)).dispatch();
         assert_eq!(response.status(), Status::Ok);
         assert_eq!(response.into_string().unwrap(), "Hello, world!");
+    }
+
+    #[test]
+    fn resolve() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let response = client.get("/ens/resolve/vitalik.eth").dispatch();
+        assert_eq!(response.status(), Status::Ok);
     }
 }

@@ -1,0 +1,16 @@
+[package]
+name = "ens-fast"
+version = "0.1.0"
+edition = "2021"
+authors = ["Anudit Nagar <nagaranudit@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "Fastest ENS Resolver"
+readme = "README.md"
+homepage = "https://github.com/anudit/ens-fast"
+repository = "https://github.com/anudit/ens-fast"
+keywords = ["ens", "fast"]
+
+[dependencies]
+dotenv = "0.15.0"
+rocket = { version = "0.5.0-rc.2", features = ["json"] }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }

@@ -10,7 +10,11 @@ WORKDIR /
 RUN mkdir -p ./data
 COPY --from=builder /app/data ./data
 COPY --from=builder /app/target/release/ens-fast .
-ENV PROFILE release
-ENV PORT 3000
-EXPOSE 3000
-CMD ["./ens-fast"]
+
+ENV ROCKET_ADDRESS=0.0.0.0
+ENV ROCKET_ENV=production
+ENV PROFILE=release
+ENV PORT 8000
+EXPOSE 8000
+
+CMD ROCKET_PORT=$PORT ./ens-fast

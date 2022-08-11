@@ -64,7 +64,7 @@ mod test {
     #[test]
     fn ping() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
-        let mut response = client.get(uri!(super::ping_fn)).dispatch();
+        let response = client.get(uri!(super::ping_fn)).dispatch();
         assert_eq!(response.status(), Status::Ok);
         assert_eq!(response.into_string().unwrap(), "Hello, world!");
     }

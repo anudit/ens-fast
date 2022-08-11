@@ -3,8 +3,12 @@ name: Node Build Test
 on:
   push:
     branches: [ main ]
+    paths:
+    - 'nodeserver/'
   pull_request:
     branches: [ main ]
+    paths:
+    - 'nodeserver/'
 
 jobs:
   build:

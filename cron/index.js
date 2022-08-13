@@ -5,16 +5,16 @@ const bfj = require('bfj');
 
 const limit = 1000;
 
-async function getPage(lastID){
-    const log  = `Fetching page ${lastID}`
+async function getPage(start, end){
+    const log  = `Fetching page ${start}`
     console.time(log);
 
     let data = await fetch('https://api.thegraph.com/subgraphs/name/ensdomains/ens', {
         method: 'POST',
         body: JSON.stringify({
             query: `
-            query($lastID: ID) {
-                domains(first: ${limit}, orderBy: id, orderDirection: asc, where: { id_gt: $lastID, name_not: null, resolvedAddress_not: null}) {
+            query($lastID: ID, $end: ID) {
+                domains(first: ${limit}, orderBy: id, orderDirection: asc, where: { id_gt: $lastID, id_lt: $end, name_not: null, resolvedAddress_not: null}) {
                     id
                   name
                   resolvedAddress {
@@ -30,7 +30,8 @@ async function getPage(lastID){
             }
             `,
             variables: {
-                lastID: lastID,
+                lastID: start,
+                end: end
             },
         })
     });
@@ -108,11 +109,11 @@ async function saveToFile(fileName, data){
     return result;
 }
 
-async function getData(){
-    let lastId = '';
+async function getData(workerId, start, end){
+    let lastId = start;
     let domains;
-    let ensToAdd = {};
     let totalCount = 0;
+    let ensToAdd = {};
 
     // for (let index = 0; index < chunked.length; index++) {
     //     const promiseArray = chunked[index].map(getPage);
@@ -132,19 +133,39 @@ async function getData(){
     // }
 
     do {
-        domains = await getPage(lastId);
+        domains = await getPage(lastId, end);
         let eta = processGraphResp(domains);
         totalCount += Object.keys(eta).length;
         ensToAdd = {...ensToAdd, ...eta};
-        console.log('total count', totalCount);
+        console.log(workerId, 'total count', totalCount);
         lastId = domains[domains.length - 1].id;
     } while (domains.length > 0);
 
-    ensToAdd = await bfjStringify(ensToAdd);
-    await saveToFile('ensToAdd.json', ensToAdd)
-    ensToAdd = null; // free the memory
-
+    return ensToAdd;
 }
 
+async function splitAndStart(){
+    let ensToAdd = {}
 
-getData();
+    let promiseArray = [
+        getData('#1', '0x0'.padEnd(64,'0'), '0x3'.padEnd(64,'f')),
+        getData('#2', '0x4'.padEnd(64,'0'), '0x7'.padEnd(64,'f')),
+        getData('#3', '0x8'.padEnd(64,'0'), '0xa'.padEnd(64,'f')),
+        getData('#4', '0xb'.padEnd(64,'0'), '0xf'.padEnd(64,'f'))
+    ]
+
+    let resp = await Promise.allSettled(promiseArray);
+    for (let i = 0; i < resp.length; i++) {
+        const respData = resp[i];
+        console.log(`#${i} Status`, respData.status);
+        if (respData.status === 'fulfilled'){
+            ensToAdd = {...ensToAdd, ...respData.value}
+        }
+    }
+    resp = null;
+
+    ensToAdd = await bfjStringify(ensToAdd);
+    await saveToFile('ensToAdd.json', ensToAdd);
+}
+
+splitAndStart();

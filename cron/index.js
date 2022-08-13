@@ -87,7 +87,7 @@ async function bfjStringify(data){
 async function saveToFile(fileName, data){
     let promise = new Promise((res, rej) => {
 
-        let fullPath = path.join(process.cwd(), fileName);
+        let fullPath = path.join(process.cwd(), '/data/', fileName);
         fs.writeFile(fullPath, data, err => {
             if (err) {
                 console.error(err)

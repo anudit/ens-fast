@@ -39,3 +39,7 @@ jobs:
 
       - name: Cache
         run: node ./cron/index.js
+
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Update ENS Database

@@ -44,10 +44,9 @@ fn stats_fn(ens_to_address: &State<HashMap<String, String>>) -> Value  {
     json!({"count": ens_to_address.len()})
 }
 
-#[launch]
-fn rocket() -> _ {
+fn get_hashmap_from_file() -> HashMap<String, String> {
 
-    dotenv().ok();
+    let mut e_t_a: HashMap<String, String> = HashMap::new();
 
     let profile = match env::var("PROFILE") {
         Ok(v) => v,
@@ -62,14 +61,25 @@ fn rocket() -> _ {
 
     start = Instant::now();
     println!("Compiling HashMap");
-    let mut ens_to_address: HashMap<String, String> = HashMap::new();
+
     for (key, value) in payload.as_object().unwrap() {
-        ens_to_address.insert(key.to_string(), value.to_string());
+        e_t_a.insert(key.to_string(), value.to_string());
     }
     println!("Compiled HashMap {:?}", start.elapsed());
 
-    rocket::build().manage(ens_to_address).mount("/", routes![ens_fn, stats_fn, ping_fn])
+    e_t_a
 
+}
+
+#[launch]
+fn rocket() -> _ {
+
+    dotenv().ok();
+    let ens_to_address: HashMap<String, String> = get_hashmap_from_file();
+
+    rocket::build()
+        .manage(ens_to_address)
+        .mount("/", routes![ens_fn, stats_fn, ping_fn])
 }
 
 

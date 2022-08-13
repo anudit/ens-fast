@@ -138,34 +138,50 @@ async function getData(workerId, start, end){
         totalCount += Object.keys(eta).length;
         ensToAdd = {...ensToAdd, ...eta};
         console.log(workerId, 'total count', totalCount);
-        lastId = domains[domains.length - 1].id;
+        if (domains.length>0) lastId = domains[domains.length - 1].id;
     } while (domains.length > 0);
 
-    return ensToAdd;
+    console.log(workerId, '🟢 Done', totalCount);
+    return {ensToAdd, totalCount};
 }
 
 async function splitAndStart(){
     let ensToAdd = {}
+    let totalCount = 0
 
     let promiseArray = [
-        getData('#1', '0x0'.padEnd(64,'0'), '0x3'.padEnd(64,'f')),
-        getData('#2', '0x4'.padEnd(64,'0'), '0x7'.padEnd(64,'f')),
-        getData('#3', '0x8'.padEnd(64,'0'), '0xa'.padEnd(64,'f')),
-        getData('#4', '0xb'.padEnd(64,'0'), '0xf'.padEnd(64,'f'))
+        getData('#1', '0x0'.padEnd(64,'0'), '0x1'.padEnd(64,'f')),
+        getData('#2', '0x2'.padEnd(64,'0'), '0x3'.padEnd(64,'f')),
+        getData('#3', '0x4'.padEnd(64,'0'), '0x5'.padEnd(64,'f')),
+        getData('#4', '0x6'.padEnd(64,'0'), '0x7'.padEnd(64,'f')),
+        getData('#5', '0x8'.padEnd(64,'0'), '0x9'.padEnd(64,'f')),
+        getData('#6', '0xa'.padEnd(64,'0'), '0xb'.padEnd(64,'f')),
+        getData('#7', '0xc'.padEnd(64,'0'), '0xd'.padEnd(64,'f')),
+        getData('#8', '0xe'.padEnd(64,'0'), '0xf'.padEnd(64,'f'))
     ]
+
+    // let promiseArray = [
+    //     getData('#1', '0x0'.padEnd(64,'0'), '0x001'.padEnd(64,'f')),
+    //     getData('#2', '0x4'.padEnd(64,'0'), '0x401'.padEnd(64,'f')),
+    //     getData('#3', '0x8'.padEnd(64,'0'), '0x801'.padEnd(64,'f')),
+    //     getData('#4', '0xb'.padEnd(64,'0'), '0xb01'.padEnd(64,'f'))
+    // ]
 
     let resp = await Promise.allSettled(promiseArray);
     for (let i = 0; i < resp.length; i++) {
         const respData = resp[i];
-        console.log(`#${i} Status`, respData.status);
+        console.log(`#${i} Status`, respData.status, respData?.value?.totalCount);
         if (respData.status === 'fulfilled'){
-            ensToAdd = {...ensToAdd, ...respData.value}
+            totalCount += respData.value.totalCount;
+            ensToAdd = {...ensToAdd, ...respData.value.ensToAdd}
         }
     }
-    resp = null;
+    resp = null; // free the memory
 
+    console.log(`Stringifying ${totalCount.toLocaleString()} Domains`);
     ensToAdd = await bfjStringify(ensToAdd);
     await saveToFile('ensToAdd.json', ensToAdd);
+    console.log('Saved to file');
 }
 
 splitAndStart();

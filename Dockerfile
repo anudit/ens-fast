@@ -10,11 +10,11 @@ RUN cargo build --release
 
 FROM alpine
 
-RUN mkdir /app
-RUN mkdir /app/data
-WORKDIR /app
-COPY --from=builder /app/target/release/ens-fast /app
-COPY --from=builder /app/data /app/data
+RUN mkdir /data
+WORKDIR /
+COPY --from=builder /app/target/release/ens-fast /
+COPY --from=builder /app/data /data
+RUN ls /
 
 ARG PORT
 
@@ -22,4 +22,4 @@ ENV ROCKET_ADDRESS=0.0.0.0
 ENV ROCKET_ENV=production
 ENV PROFILE=release
 
-CMD ROCKET_PORT=$PORT /app/ens-fast
+CMD ROCKET_PORT=$PORT ./ens-fast

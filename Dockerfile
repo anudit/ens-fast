@@ -1,8 +1,5 @@
-FROM rustlang/rust:nightly
+FROM rustlang/rust:nightly as builder
 
-ARG PORT
-
-ENV ROCKET_ADDRESS=0.0.0.0
 ENV ROCKET_ENV=production
 ENV PROFILE=release
 
@@ -11,4 +8,16 @@ COPY . .
 
 RUN cargo build --release
 
-CMD ROCKET_PORT=$PORT ./target/release/ens-fast
+FROM alpine
+
+RUN mkdir /app
+WORKDIR /app
+COPY --from=builder /app/target/release/ens-fast /app
+
+ARG PORT
+
+ENV ROCKET_ADDRESS=0.0.0.0
+ENV ROCKET_ENV=production
+ENV PROFILE=release
+
+CMD ROCKET_PORT=$PORT /app/ens-fast

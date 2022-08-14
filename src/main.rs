@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use std::time::Instant;
 
 use rocket::serde::json::{Value, json};
-use rocket::{State};
+use rocket::State;
 use serde_json::from_reader;
 
 fn read_db<P: AsRef<Path>>(path: P) -> Result<Value, Box<dyn Error>> {

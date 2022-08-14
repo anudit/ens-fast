@@ -11,8 +11,10 @@ RUN cargo build --release
 FROM alpine
 
 RUN mkdir /app
+RUN mkdir /app/data
 WORKDIR /app
 COPY --from=builder /app/target/release/ens-fast /app
+COPY --from=builder /app/data /app/data
 
 ARG PORT
 

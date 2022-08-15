@@ -21,7 +21,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            rustserver/target
+            /target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/rustserver/Cargo.lock') }}
 
       - uses: actions-rs/toolchain@v1

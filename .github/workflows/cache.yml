@@ -1,4 +1,4 @@
-name: Cache
+name: Update ENS Cache
 
 on:
   workflow_dispatch:

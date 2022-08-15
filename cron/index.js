@@ -84,6 +84,31 @@ async function bfjStringify(data){
     return result;
 }
 
+async function readFile(fileName){
+    let promise = new Promise((res, rej) => {
+
+        let fullPath = path.join(process.cwd(), '/data/', fileName);
+        fs.readFile(fullPath, (err, data) => {
+            if (err) {
+                console.error(err)
+                rej({
+                    success: false,
+                    err
+                })
+            }
+            else {
+                res({
+                    success: true,
+                    data: data
+                })
+            }
+        })
+
+    });
+    let result = await promise;
+    return result;
+}
+
 async function saveToFile(fileName, data){
     let promise = new Promise((res, rej) => {
 
@@ -180,7 +205,10 @@ async function splitAndStart(){
 
     console.log(`Stringifying ${totalCount.toLocaleString()} Domains`);
     ensToAdd = await bfjStringify(ensToAdd);
+    let {data: oldDomainCount} = await readFile('stats.txt');
     await saveToFile('ensToAdd.json', ensToAdd);
+    console.log(`Added ${totalCount - parseInt(oldDomainCount)} new domains.`);
+    await saveToFile('stats.txt', totalCount);
     console.log('Saved to file');
 }
 

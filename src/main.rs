@@ -88,6 +88,7 @@ mod test {
     use super::rocket;
     use rocket::local::blocking::Client;
     use rocket::http::Status;
+    use rocket::serde::json::{Value, from_str};
 
 
     #[test]
@@ -103,9 +104,11 @@ mod test {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
         let response = client.get("/ens/resolve/vitalik.eth").dispatch();
         assert_eq!(response.status(), Status::Ok);
+        let resp = response.into_string().unwrap();
+        let res: Value = from_str(&resp).unwrap();
         assert_eq!(
-            response.into_string().unwrap(),
-            r#"{"address":"0xd8da6bf26964af9d7eed9e03e53415d37aa96045"}"#
+            res["address"].to_string().to_lowercase(),
+            String::from("\"0xd8da6bf26964af9d7eed9e03e53415d37aa96045\"").to_string().to_lowercase()
         );
     }
 }

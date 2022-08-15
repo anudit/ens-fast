@@ -103,5 +103,9 @@ mod test {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
         let response = client.get("/ens/resolve/vitalik.eth").dispatch();
         assert_eq!(response.status(), Status::Ok);
+        assert_eq!(
+            response.into_string().unwrap(),
+            r#"{"address":"0xd8da6bf26964af9d7eed9e03e53415d37aa96045"}"#
+        );
     }
 }

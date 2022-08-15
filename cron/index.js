@@ -208,7 +208,7 @@ async function splitAndStart(){
     let {data: oldDomainCount} = await readFile('stats.txt');
     await saveToFile('ensToAdd.json', ensToAdd);
     console.log(`Added ${totalCount - parseInt(oldDomainCount)} new domains.`);
-    await saveToFile('stats.txt', totalCount);
+    await saveToFile('stats.txt', totalCount.toString());
     console.log('Saved to file');
 }
 

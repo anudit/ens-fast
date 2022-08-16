@@ -33,6 +33,9 @@ jobs:
         run: cd cron && pnpm install
 
       - name: Cache
+        env:
+          NODE_OPTIONS: "--max-old-space-size=8192"
+          WEB3STORAGE_TOKEN: ${{ secrets.WEB3STORAGE_TOKEN }}
         run: node ./cron/index.js
 
       - uses: stefanzweifel/git-auto-commit-action@v4

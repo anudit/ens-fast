@@ -1,9 +1,12 @@
+require('dotenv').config()
 const fs = require('fs');
 const path = require('path');
 const fetch = require('cross-fetch');
 const bfj = require('bfj');
+const { Web3Storage, File } = require('web3.storage');
 
 const limit = 1000;
+const { WEB3STORAGE_TOKEN } = process.env;
 
 async function getPage(start, end){
     const log  = `Fetching page ${start}`
@@ -84,7 +87,7 @@ async function bfjStringify(data){
     return result;
 }
 
-async function readFile(fileName){
+async function readFile(fileName, json=false){
     let promise = new Promise((res, rej) => {
 
         let fullPath = path.join(process.cwd(), '/data/', fileName);
@@ -106,7 +109,20 @@ async function readFile(fileName){
 
     });
     let result = await promise;
-    return result;
+    if(json === true) return {...result, data: JSON.parse(result.data)};
+    else return result;
+}
+
+function prettyDate() {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun","Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    let timestamp = Date.now();
+    const dt = new Date(parseInt(timestamp));
+    const d = dt.getDate();
+    const month = monthNames[dt.getMonth()];
+    const y = dt.getFullYear();
+    const hh = dt.getHours();
+    const mm = dt.getMinutes();
+    return `${d}-${month}-${y}-${hh}-${mm}`;
 }
 
 async function saveToFile(fileName, data){
@@ -205,11 +221,34 @@ async function splitAndStart(){
 
     console.log(`Stringifying ${totalCount.toLocaleString()} Domains`);
     ensToAdd = await bfjStringify(ensToAdd);
-    let {data: oldDomainCount} = await readFile('stats.txt');
-    await saveToFile('ensToAdd.json', ensToAdd);
-    console.log(`Added ${totalCount - parseInt(oldDomainCount)} new domains.`);
-    await saveToFile('stats.txt', totalCount.toString());
-    console.log('Saved to file');
+
+    let {data: snapshots} = await readFile('snapshots.json', json=true);
+    console.log(`Added ${totalCount - snapshots[snapshots.length-1].domainCount} new domains.`);
+
+    const client =  new Web3Storage({ token: WEB3STORAGE_TOKEN });
+    const files = [new File([ensToAdd], `ens-snap-${prettyDate()}.json`)];
+    const cid = await client.put(files);
+
+    if (cid.slice(0, 3) === 'baf'){
+        console.log('🟢 Snapshot saved to Web3.storage.');
+
+        const snap = {
+            domainCount: totalCount,
+            time: Date.now(),
+            cid: cid,
+        };
+
+        console.log(`snap`, snap);
+        snapshots.push(snap);
+        await saveToFile('snapshots.json', JSON.stringify(snapshots, null, 2));
+
+        console.log('✅ All Done');
+    }
+    else {
+        console.log('🔴 Failed to save snapshot to Web3.storage')
+        console.log(cid);
+    }
+
 }
 
 splitAndStart();

@@ -2,3 +2,5 @@ node_modules
 notes.txt
 target
 .env
+/data/ensToAdd.json
+/data/ensToAddIpfs.json

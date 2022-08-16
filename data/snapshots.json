@@ -1,17 +1,8 @@
 [
   {
-    "domainCount": 3316,
-    "time": 1660621497930,
-    "cid": "bafybeicr23nrfshkkbvtcided6w3dxmy7qrf5szdkquob7jsuaw4wpvf3y"
-  },
-  {
-    "domainCount": 3316,
-    "time": 1660621588852,
-    "cid": "bafybeibxvbwlffbp7jbxxqsgb4nocwv2bygb3qwewrmkzyzcajy7z5irmy"
-  },
-  {
-    "domainCount": 1736391,
+    "domain_count": 1736391,
     "time": 1660626967906,
+    "file_name": "ens-snap-16-Aug-2022-5-15.json",
     "cid": "bafybeiaiw5soeywf6w4con7kqpjh6dbye532n7qwcbfh2etskzw7gn5che"
   }
 ]

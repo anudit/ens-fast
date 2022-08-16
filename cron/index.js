@@ -223,18 +223,20 @@ async function splitAndStart(){
     ensToAdd = await bfjStringify(ensToAdd);
 
     let {data: snapshots} = await readFile('snapshots.json', json=true);
-    console.log(`Added ${totalCount - snapshots[snapshots.length-1].domainCount} new domains.`);
+    console.log(`Added ${totalCount - snapshots[snapshots.length-1].domain_count} new domains.`);
 
     const client =  new Web3Storage({ token: WEB3STORAGE_TOKEN });
-    const files = [new File([ensToAdd], `ens-snap-${prettyDate()}.json`)];
+    const fn = `ens-snap-${prettyDate()}.json`;
+    const files = [new File([ensToAdd], fn)];
     const cid = await client.put(files);
 
     if (cid.slice(0, 3) === 'baf'){
         console.log('🟢 Snapshot saved to Web3.storage.');
 
         const snap = {
-            domainCount: totalCount,
+            domain_count: totalCount,
             time: Date.now(),
+            file_name: fn,
             cid: cid,
         };
 

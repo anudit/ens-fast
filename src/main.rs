@@ -130,7 +130,6 @@ async fn get_hashmap_from_file() -> HashMapType {
 
     }
 
-
     e_t_a
 
 }
@@ -148,9 +147,7 @@ async fn setup() -> Rocket<rocket::Build> {
 #[rocket::main]
 async fn main() -> Result<(), rocket::Error> {
 
-    let _rocket: Rocket<rocket::Build> = setup().await;
-
-    _rocket.launch().await.unwrap();
+    let _rocket = setup().await.launch().await.unwrap();
 
     Ok(())
 }

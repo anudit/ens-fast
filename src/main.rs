@@ -103,21 +103,26 @@ async fn get_hashmap_from_file() -> HashMapType {
 
     }
     else {
-        // download from ipfs and store in data.
-        let snap_path = "./data/snapshots.json";
-        let snap_data = read_from_file2(snap_path).unwrap();
+        let snap_details_path = "./data/snapshots.json";
+
+        let snap_data = read_from_file2(snap_details_path).unwrap();
         let cid = snap_data[snap_data.len()-1].cid.to_string();
         let file_name = snap_data[snap_data.len()-1].file_name.to_string();
 
-        println!("snap_data {:?}", cid);
+        println!("Getting Snapshots");
         let url = format!("https://{ipfs_hash}.ipfs.w3s.link/{file_name}", ipfs_hash=cid, file_name=file_name);
-        let snap_path ="./data/ensToAddIpfs.json";
-        println!("Downloading Snapshot");
-        fetch_and_save(url, (&snap_path).to_string()).await.unwrap();
+        let snap_path = format!("./data/{cid}.json", cid = cid);
 
+        let cached = Path::new(&snap_path).exists();
+        if cached == false {
+            println!("Downloading latest snapshot {}", url);
+            fetch_and_save(url, (&snap_path).to_string()).await.unwrap();
+        }
+        else {
+            println!("Using Cached Snapshot");
+        }
 
-        let file_path = "./data/ensToAddIpfs.json";
-        let payload = read_from_file(file_path).unwrap();
+        let payload = read_from_file(snap_path).unwrap();
         println!("Read Complete {:?}", start.elapsed());
 
         start = Instant::now();

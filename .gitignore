@@ -4,3 +4,4 @@ target
 .env
 /data/ensToAdd.json
 /data/ensToAddIpfs.json
+/data/baf*

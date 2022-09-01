@@ -7,15 +7,22 @@ use dotenv::dotenv;
 use std::env;
 use std::error::Error;
 use std::fs::File;
-use std::io::{Cursor, BufReader};
+use std::io::{Write, BufReader};
 use std::path::Path;
 use std::collections::HashMap;
 use std::time::Instant;
+use std::cmp::min;
+use std::fmt;
 
 use rocket::Rocket;
 use rocket::serde::json::{Value, json, from_str};
 use rocket::State;
 use serde_json::{Number, from_reader};
+
+use reqwest::Client;
+use indicatif::{ProgressBar, ProgressState, ProgressStyle};
+use futures_util::StreamExt;
+
 
 use rocket::serde::{Serialize, Deserialize};
 
@@ -46,12 +53,44 @@ fn read_from_file2<P: AsRef<Path>>(path: P) -> Result<Vec<Snapshot>, Box<dyn Err
     Ok(u)
 }
 
-async fn fetch_and_save(url: String, file_name: String) -> Result<(), Box<dyn Error>>  {
-    let response = reqwest::get(url).await?;
-    let mut file = std::fs::File::create(file_name)?;
-    let mut content =  Cursor::new(response.bytes().await?);
-    std::io::copy(&mut content, &mut file)?;
-    Ok(())
+pub async fn download_with_prog(url: &str, path: &str) -> Result<(), String> {
+    let client = Client::new();
+
+    let res = client
+        .get(url)
+        .send()
+        .await
+        .or(Err(format!("Failed to GET from '{}'", &url)))?;
+
+    let total_size = res
+        .content_length()
+        .ok_or(format!("Failed to get content length from '{}'", &url))?;
+
+    // Indicatif setup
+
+    let pb = ProgressBar::new(total_size);
+    pb.set_style(ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+        .unwrap()
+        .with_key("eta", |state: &ProgressState, w: &mut dyn fmt::Write| write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap())
+        .progress_chars("#>-"));
+    pb.set_message(format!("Downloading {}", url));
+
+    // download chunks
+    let mut file = File::create(path).or(Err(format!("Failed to create file '{}'", &path)))?;
+    let mut downloaded: u64 = 0;
+    let mut stream = res.bytes_stream();
+
+    while let Some(item) = stream.next().await {
+        let chunk = item.or(Err(format!("Error while downloading file")))?;
+        file.write_all(&chunk)
+            .or(Err(format!("Error while writing to file")))?;
+        let new = min(downloaded + (chunk.len() as u64), total_size);
+        downloaded = new;
+        pb.set_position(new);
+    }
+
+    pb.finish_with_message(format!("Downloaded {} to {}", url, path));
+    return Ok(());
 }
 
 #[get("/ens/resolve/<ens_name>")]
@@ -64,6 +103,27 @@ fn ens_fn(ens_name: String, ens_to_address: &State<HashMapType>) -> Value  {
         json!({"address": res})
     }
 }
+
+// #[post("/ens/resolve/batch")]
+// fn ens_batch_fn(ens_names: Vec<serde_json::Value>, ens_to_address: &State<HashMapType>) -> Value  {
+
+//     let mut resp: Vec<String> = Vec::new();
+
+//     for name in ens_names.into_iter() {
+//         let res = ens_to_address.get(&name);
+
+//         if res.is_some() {
+//             let res_str = &res.unwrap()[1..43];
+//             resp.push(res_str.to_string())
+//         } else {
+//             resp.push("".to_string())
+//         }
+//     }
+
+//     json!({"res": resp})
+
+// }
+
 
 #[get("/ping")]
 fn ping_fn() -> &'static str {
@@ -116,7 +176,7 @@ async fn get_hashmap_from_file() -> HashMapType {
         let cached = Path::new(&snap_path).exists();
         if cached == false {
             println!("Downloading latest snapshot {}", url);
-            fetch_and_save(url, (&snap_path).to_string()).await.unwrap();
+            download_with_prog(&url, &snap_path).await.unwrap();
         }
         else {
             println!("Using Cached Snapshot");

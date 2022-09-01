@@ -4,7 +4,7 @@ extern crate dotenv;
 extern crate reqwest;
 
 use dotenv::dotenv;
-use std::env;
+use std::{env, fmt};
 use std::error::Error;
 use std::fs::File;
 use std::io::{Write, BufReader};
@@ -12,19 +12,14 @@ use std::path::Path;
 use std::collections::HashMap;
 use std::time::Instant;
 use std::cmp::min;
-use std::fmt;
 
-use rocket::Rocket;
-use rocket::serde::json::{Value, json, from_str};
-use rocket::State;
+use rocket::{Rocket, State};
+use rocket::serde::{Serialize, Deserialize};
+use rocket::serde::json::{Json, Value, json, from_str};
 use serde_json::{Number, from_reader};
-
 use reqwest::Client;
 use indicatif::{ProgressBar, ProgressState, ProgressStyle};
 use futures_util::StreamExt;
-
-
-use rocket::serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
@@ -33,6 +28,12 @@ pub struct Snapshot {
     time: Number,
     file_name: String,
     cid: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct EnsBatchBody {
+    ens: Vec<String>,
 }
 
 type HashMapType = HashMap<String, String>;
@@ -53,7 +54,7 @@ fn read_from_file2<P: AsRef<Path>>(path: P) -> Result<Vec<Snapshot>, Box<dyn Err
     Ok(u)
 }
 
-pub async fn download_with_prog(url: &str, path: &str) -> Result<(), String> {
+async fn download_with_prog(url: &str, path: &str) -> Result<(), String> {
     let client = Client::new();
 
     let res = client
@@ -104,26 +105,25 @@ fn ens_fn(ens_name: String, ens_to_address: &State<HashMapType>) -> Value  {
     }
 }
 
-// #[post("/ens/resolve/batch")]
-// fn ens_batch_fn(ens_names: Vec<serde_json::Value>, ens_to_address: &State<HashMapType>) -> Value  {
+#[post("/ens/resolve/batch", format = "application/json", data = "<ens_names>")]
+fn ens_batch_fn(ens_names: Json<EnsBatchBody>, ens_to_address: &State<HashMapType>) -> Value  {
 
-//     let mut resp: Vec<String> = Vec::new();
+    let mut resp:HashMap<String, Value> = HashMap::new();
+    let body = ens_names.into_inner();
 
-//     for name in ens_names.into_iter() {
-//         let res = ens_to_address.get(&name);
+    for name in body.ens.into_iter() {
+        let res = ens_to_address.get(&name);
 
-//         if res.is_some() {
-//             let res_str = &res.unwrap()[1..43];
-//             resp.push(res_str.to_string())
-//         } else {
-//             resp.push("".to_string())
-//         }
-//     }
+        if res.is_some() {
+            let res_str = &res.unwrap()[1..43];
+            resp.insert(name, json!(res_str));
+        } else {
+            resp.insert(name, json!(false));
+        }
+    }
 
-//     json!({"res": resp})
-
-// }
-
+    json!(resp)
+}
 
 #[get("/ping")]
 fn ping_fn() -> &'static str {
@@ -205,7 +205,7 @@ async fn setup() -> Rocket<rocket::Build> {
 
     rocket::build()
         .manage(ens_to_address)
-        .mount("/", routes![ens_fn, stats_fn, ping_fn])
+        .mount("/", routes![ens_fn, ens_batch_fn, stats_fn, ping_fn])
 
 }
 

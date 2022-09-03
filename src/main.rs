@@ -7,7 +7,7 @@ use dotenv::dotenv;
 use std::{env, fmt};
 use std::error::Error;
 use std::fs::File;
-use std::io::{Write, BufReader};
+use std::io::{ Cursor, Write, BufReader};
 use std::path::Path;
 use std::collections::HashMap;
 use std::time::Instant;
@@ -53,6 +53,14 @@ fn read_from_file2<P: AsRef<Path>>(path: P) -> Result<Vec<Snapshot>, Box<dyn Err
     let reader = BufReader::new(file);
     let u: Vec<Snapshot> = from_reader(reader)?;
     Ok(u)
+}
+
+async fn download(url: String, file_name: String) -> Result<(), Box<dyn Error>>  {
+    let response = reqwest::get(url).await?;
+    let mut file = std::fs::File::create(file_name)?;
+    let mut content =  Cursor::new(response.bytes().await?);
+    std::io::copy(&mut content, &mut file)?;
+    Ok(())
 }
 
 async fn download_with_prog(url: &str, path: &str) -> Result<(), String> {
@@ -209,7 +217,7 @@ async fn get_hashmap_from_file() -> HashMapType {
         let cached = Path::new(&snap_path).exists();
         if cached == false {
             println!("Downloading latest snapshot {}", url);
-            download_with_prog(&url, &snap_path).await.unwrap();
+            download(url, snap_path.to_owned()).await.unwrap();
         }
         else {
             println!("Using Cached Snapshot");

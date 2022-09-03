@@ -20,6 +20,7 @@ use serde_json::{Number, from_reader};
 use reqwest::Client;
 use indicatif::{ProgressBar, ProgressState, ProgressStyle};
 use futures_util::StreamExt;
+use ethers::{prelude::*};
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
@@ -67,8 +68,6 @@ async fn download_with_prog(url: &str, path: &str) -> Result<(), String> {
         .content_length()
         .ok_or(format!("Failed to get content length from '{}'", &url))?;
 
-    // Indicatif setup
-
     let pb = ProgressBar::new(total_size);
     pb.set_style(ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
         .unwrap()
@@ -105,6 +104,19 @@ fn ens_fn(ens_name: String, ens_to_address: &State<HashMapType>) -> Value  {
     }
 }
 
+#[get("/ens/resolve-full/<ens_name>")]
+async fn ens_full_fn(ens_name: String) -> Value  {
+
+    let provider = Provider::<Http>::try_from("https://eth.public-rpc.com").expect("could not instantiate HTTP Provider");
+    let address = provider.resolve_name(&ens_name).await;
+
+    let add: Value = match address {
+        Ok(v)=> Value::String(v.to_string()),
+        Err(_) => Value::Bool(false),
+    };
+    json!({"address": add})
+}
+
 #[post("/ens/resolve/batch", format = "application/json", data = "<ens_names>")]
 fn ens_batch_fn(ens_names: Json<EnsBatchBody>, ens_to_address: &State<HashMapType>) -> Value  {
 
@@ -120,6 +132,27 @@ fn ens_batch_fn(ens_names: Json<EnsBatchBody>, ens_to_address: &State<HashMapTyp
         } else {
             resp.insert(name, json!(false));
         }
+    }
+
+    json!(resp)
+}
+
+#[post("/ens/resolve-full/batch", format = "application/json", data = "<ens_names>")]
+async fn ens_batch_full_fn(ens_names: Json<EnsBatchBody>) -> Value  {
+
+    let body = ens_names.into_inner();
+    let mut resp:HashMap<String, Value> = HashMap::new();
+
+    for name in body.ens.into_iter() {
+
+        let provider = Provider::<Http>::try_from("https://eth.public-rpc.com").expect("could not instantiate HTTP Provider");
+        let address = provider.resolve_name(&name).await;
+
+        let add: Value = match address {
+            Ok(v)=> Value::String(v.to_string()),
+            Err(_) => Value::Bool(false),
+        };
+        resp.insert(name, json!(add));
     }
 
     json!(resp)
@@ -205,7 +238,7 @@ async fn setup() -> Rocket<rocket::Build> {
 
     rocket::build()
         .manage(ens_to_address)
-        .mount("/", routes![ens_fn, ens_batch_fn, stats_fn, ping_fn])
+        .mount("/", routes![ens_fn, ens_batch_fn, ens_batch_full_fn, ens_full_fn, stats_fn, ping_fn])
 
 }
 

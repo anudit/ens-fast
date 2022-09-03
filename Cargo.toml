@@ -12,6 +12,7 @@ keywords = ["ens", "fast"]
 
 [dependencies]
 dotenv = "0.15.0"
+ethers = "0.17.0"
 futures-util = "0.3.24"
 indicatif = "0.17.0"
 reqwest = {version = "0.11.11", features = ["json","stream"] }

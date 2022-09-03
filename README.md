@@ -19,3 +19,44 @@
     ```
     cargo run --release
     ```
+4. Test it out.
+
+## API
+
+Enpoint: http://localhost:8000
+
+- [GET] `/ens/resolve/<ens-name>`
+
+    Example [`http://localhost:8000/ens/resolve/vitalik.eth`](http://localhost:8000/ens/resolve/vitalik.eth)
+
+- [GET] `/ens/resolve-full/<ens-name>`
+
+    Example [`http://localhost:8000/ens/resolve-full/vitalik.eth`](http://localhost:8000/ens/resolve-full/vitalik.eth)
+
+- [POST] `/ens/resolve/batch`
+
+    Example [`http://localhost:8000/ens/resolve/batch`](http://localhost:8000/ens/resolve/batch)
+
+    Body,
+    ```
+    {
+        "ens": [
+            "vitalik.eth",
+            "nick.eth",
+        ]
+    }
+    ```
+
+- [POST] `/ens/resolve-full/batch`
+
+    Example [`http://localhost:8000/ens/resolve-full/batch`](http://localhost:8000/ens/resolve-full/batch)
+
+    Body,
+    ```
+    {
+        "ens": [
+            "vitalik.eth",
+            "nick.eth",
+        ]
+    }
+    ```

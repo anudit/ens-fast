@@ -103,7 +103,7 @@ async fn download_with_prog(url: &str, path: &str) -> Result<(), String> {
 
 #[get("/ens/resolve/<ens_name>")]
 fn ens_fn(ens_name: String, ens_to_address: &State<HashMapType>) -> Value  {
-    let res = ens_to_address.get(&ens_name);
+    let res = ens_to_address.get(&ens_name.to_lowercase());
 
     if res.is_some() {
         json!({"address": res.unwrap()[1..43]})
@@ -116,7 +116,7 @@ fn ens_fn(ens_name: String, ens_to_address: &State<HashMapType>) -> Value  {
 async fn ens_full_fn(ens_name: String) -> Value  {
 
     let provider = Provider::<Http>::try_from("https://eth.public-rpc.com").expect("could not instantiate HTTP Provider");
-    let address = provider.resolve_name(&ens_name).await;
+    let address = provider.resolve_name(&ens_name.to_lowercase()).await;
 
     let add: Value = match address {
         Ok(v)=> Value::String(v.to_string()),
@@ -132,13 +132,14 @@ fn ens_batch_fn(ens_names: Json<EnsBatchBody>, ens_to_address: &State<HashMapTyp
     let body = ens_names.into_inner();
 
     for name in body.ens.into_iter() {
-        let res = ens_to_address.get(&name);
+        let lookup = name.to_lowercase();
+        let res = ens_to_address.get(&lookup);
 
         if res.is_some() {
             let res_str = &res.unwrap()[1..43];
-            resp.insert(name, json!(res_str));
+            resp.insert(lookup, json!(res_str));
         } else {
-            resp.insert(name, json!(false));
+            resp.insert(lookup, json!(false));
         }
     }
 
@@ -152,15 +153,15 @@ async fn ens_batch_full_fn(ens_names: Json<EnsBatchBody>) -> Value  {
     let mut resp:HashMap<String, Value> = HashMap::new();
 
     for name in body.ens.into_iter() {
-
+        let lookup = name.to_lowercase();
         let provider = Provider::<Http>::try_from("https://eth.public-rpc.com").expect("could not instantiate HTTP Provider");
-        let address = provider.resolve_name(&name).await;
+        let address = provider.resolve_name(&lookup).await;
 
         let add: Value = match address {
             Ok(v)=> Value::String(v.to_string()),
             Err(_) => Value::Bool(false),
         };
-        resp.insert(name, json!(add));
+        resp.insert(lookup, json!(add));
     }
 
     json!(resp)

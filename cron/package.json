@@ -12,7 +12,7 @@
   "dependencies": {
     "bfj": "^7.0.2",
     "cross-fetch": "^3.1.5",
-    "dotenv": "^16.0.1",
-    "web3.storage": "^4.3.0"
+    "dotenv": "^16.0.2",
+    "web3.storage": "^4.4.0"
   }
 }

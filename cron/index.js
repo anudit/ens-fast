@@ -19,16 +19,16 @@ async function getPage(start, end){
             query($lastID: ID, $end: ID) {
                 domains(first: ${limit}, orderBy: id, orderDirection: asc, where: { id_gt: $lastID, id_lt: $end, name_not: null, resolvedAddress_not: null}) {
                     id
-                  name
-                  resolvedAddress {
-                    id
-                  }
-                  subdomains {
                     name
                     resolvedAddress {
-                      id
+                        id
                     }
-                  }
+                    subdomains {
+                        name
+                        resolvedAddress {
+                            id
+                        }
+                    }
                 }
             }
             `,
@@ -58,11 +58,13 @@ function processGraphResp(domains){
         const domain = domains[i];
         eta[domain.name] = domain.resolvedAddress.id;
 
-        const subdomains = domains[i].subdomains;
-        for (let j = 0; j < subdomains.length; j++) {
-            const subdomain = subdomains[j];
-            if(Boolean(subdomain?.name) && Boolean(subdomain?.resolvedAddress?.id)){
-                eta[subdomain.name] = subdomain.resolvedAddress.id;
+        if (Object.keys(domains[i]).includes('subdomains')){
+            const subdomains = domains[i].subdomains;
+            for (let j = 0; j < subdomains.length; j++) {
+                const subdomain = subdomains[j];
+                if(Boolean(subdomain?.name) && Boolean(subdomain?.resolvedAddress?.id)){
+                    eta[subdomain.name] = subdomain.resolvedAddress.id;
+                }
             }
         }
     }
@@ -216,6 +218,7 @@ async function splitAndStart(){
             totalCount += respData.value.totalCount;
             ensToAdd = {...ensToAdd, ...respData.value.ensToAdd}
         }
+        else console.log(`#${i}`, respData.reason);
     }
     resp = null; // free the memory
 

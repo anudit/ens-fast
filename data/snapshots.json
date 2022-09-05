@@ -286,23 +286,5 @@
     "time": 1662314133997,
     "file_name": "ens-snap-4-Sep-2022-17-55.json",
     "cid": "bafybeig3sofdpmedt2yizkgxgsddszjk76rlgcsk4rdotow3f3uek7e2gm"
-  },
-  {
-    "domain_count": 230120,
-    "time": 1662345935584,
-    "file_name": "ens-snap-5-Sep-2022-2-45.json",
-    "cid": "bafybeicxwcueo2ast22l5sam4wzxhe6ar6gs7xba7v2azfm7gp4exs7bmi"
-  },
-  {
-    "domain_count": 0,
-    "time": 1662350639143,
-    "file_name": "ens-snap-5-Sep-2022-4-3.json",
-    "cid": "bafybeiancfvvkbkcmwulcpzzzywtrbdaexgcvtlcqhcrq5vehlt3u7csa4"
-  },
-  {
-    "domain_count": 0,
-    "time": 1662366127579,
-    "file_name": "ens-snap-5-Sep-2022-8-22.json",
-    "cid": "bafybeifpc5dyle2ie5id74pyn5oxgcquexo7jktp5zhyzclzmtrncypbc4"
   }
 ]

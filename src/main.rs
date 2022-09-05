@@ -20,7 +20,8 @@ use serde_json::{Number, from_reader};
 use reqwest::Client;
 use indicatif::{ProgressBar, ProgressState, ProgressStyle};
 use futures_util::StreamExt;
-use ethers::{prelude::*};
+
+pub mod ens;
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
@@ -70,7 +71,7 @@ async fn download_with_prog(url: &str, path: &str) -> Result<(), String> {
         .get(url)
         .send()
         .await
-        .or(Err(format!("Failed to GET from '{}'", &url)))?;
+        .or_else(|_| Err(format!("Failed to GET from '{}'", &url)))?;
 
     let total_size = res
         .content_length()
@@ -98,7 +99,8 @@ async fn download_with_prog(url: &str, path: &str) -> Result<(), String> {
     }
 
     pb.finish_with_message(format!("Downloaded {} to {}", url, path));
-    return Ok(());
+
+    Ok(())
 }
 
 #[get("/ens/resolve/<ens_name>")]
@@ -110,19 +112,6 @@ fn ens_fn(ens_name: String, ens_to_address: &State<HashMapType>) -> Value  {
     } else {
         json!({"address": res})
     }
-}
-
-#[get("/ens/resolve-full/<ens_name>")]
-async fn ens_full_fn(ens_name: String) -> Value  {
-
-    let provider = Provider::<Http>::try_from("https://eth.public-rpc.com").expect("could not instantiate HTTP Provider");
-    let address = provider.resolve_name(&ens_name.to_lowercase()).await;
-
-    let add: Value = match address {
-        Ok(v)=> Value::String(v.to_string()),
-        Err(_) => Value::Bool(false),
-    };
-    json!({"address": add})
 }
 
 #[post("/ens/resolve/batch", format = "application/json", data = "<ens_names>")]
@@ -146,6 +135,12 @@ fn ens_batch_fn(ens_names: Json<EnsBatchBody>, ens_to_address: &State<HashMapTyp
     json!(resp)
 }
 
+#[get("/ens/resolve-full/<ens_name>")]
+async fn ens_full_fn(ens_name: String) -> Value  {
+    let add = ens::resolve_onchain(ens_name.to_lowercase()).await;
+    json!({"address": add})
+}
+
 #[post("/ens/resolve-full/batch", format = "application/json", data = "<ens_names>")]
 async fn ens_batch_full_fn(ens_names: Json<EnsBatchBody>) -> Value  {
 
@@ -153,15 +148,8 @@ async fn ens_batch_full_fn(ens_names: Json<EnsBatchBody>) -> Value  {
     let mut resp:HashMap<String, Value> = HashMap::new();
 
     for name in body.ens.into_iter() {
-        let lookup = name.to_lowercase();
-        let provider = Provider::<Http>::try_from("https://eth.public-rpc.com").expect("could not instantiate HTTP Provider");
-        let address = provider.resolve_name(&lookup).await;
-
-        let add: Value = match address {
-            Ok(v)=> Value::String(v.to_string()),
-            Err(_) => Value::Bool(false),
-        };
-        resp.insert(lookup, json!(add));
+        let add = ens::resolve_onchain(name.to_lowercase()).await;
+        resp.insert(name, add);
     }
 
     json!(resp)
@@ -216,7 +204,7 @@ async fn get_hashmap_from_file() -> HashMapType {
         let snap_path = format!("./data/{cid}.json", cid = cid);
 
         let cached = Path::new(&snap_path).exists();
-        if cached == false {
+        if !cached {
             println!("Downloading latest snapshot {}", url);
             download(url, snap_path.to_owned()).await.unwrap();
         }
@@ -286,6 +274,24 @@ mod test {
 
         let response = client.get("/ens/resolve/vitalik.eth").dispatch().await;
         assert_eq!(response.status(), Status::Ok);
+
+        let resp = response.into_string().await.unwrap();
+        let res: Value = from_str(&resp).unwrap();
+        assert_eq!(
+            res["address"].to_string().to_lowercase(),
+            String::from("\"0xd8da6bf26964af9d7eed9e03e53415d37aa96045\"").to_string().to_lowercase()
+        );
+    }
+
+    #[rocket::async_test]
+    async fn resolve_full() {
+        use rocket::local::asynchronous::Client;
+        let rocket_instance = setup().await;
+        let client = Client::tracked(rocket_instance).await.unwrap();
+
+        let response = client.get("/ens/resolve-full/vitalik.eth").dispatch().await;
+        assert_eq!(response.status(), Status::Ok);
+
         let resp = response.into_string().await.unwrap();
         let res: Value = from_str(&resp).unwrap();
         assert_eq!(

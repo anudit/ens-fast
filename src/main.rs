@@ -197,7 +197,7 @@ async fn get_hashmap_from_file() -> HashMapType {
             },
             "vitalik.eth":{
                 "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-                "createdAt": 1628670616,
+                "created": 1628670616,
                 "expiry": 1628670616
             }
         }"#;
@@ -214,7 +214,7 @@ async fn get_hashmap_from_file() -> HashMapType {
         let file_name = snap_data[snap_data.len()-1].file_name.to_string();
 
         println!("Getting Snapshots");
-        let url = format!("https://{ipfs_hash}.ipfs.w3s.link/{file_name}", ipfs_hash=cid, file_name=file_name);
+        let url = format!("https://gateway.ipfs.io/ipfs/{ipfs_hash}/{file_name}", ipfs_hash=cid, file_name=file_name);
         let snap_path = format!("./data/{cid}.json", cid = cid);
 
         let cached = Path::new(&snap_path).exists();
@@ -265,6 +265,8 @@ async fn main() -> Result<(), rocket::Error> {
 
 #[cfg(test)]
 mod test {
+    use crate::SnapshotData;
+
     use super::setup;
     use rocket::http::Status;
     use rocket::serde::json::{Value, from_str};
@@ -287,14 +289,15 @@ mod test {
         let rocket_instance = setup().await;
         let client = Client::tracked(rocket_instance).await.unwrap();
 
-        let response = client.get("/ens/resolve/vitalik.eth").dispatch().await;
+        let response = client.get("/ens/resolve/nick.eth").dispatch().await;
         assert_eq!(response.status(), Status::Ok);
 
         let resp = response.into_string().await.unwrap();
-        let res: Value = from_str(&resp).unwrap();
+        println!("{:?}", resp);
+        let res: SnapshotData = from_str(&resp).unwrap();
         assert_eq!(
-            res["address"].to_string().to_lowercase(),
-            String::from("\"0xd8da6bf26964af9d7eed9e03e53415d37aa96045\"").to_string().to_lowercase()
+            res.address.to_lowercase(),
+            String::from("0xb8c2c29ee19d8307cb7255e1cd9cbde883a267d5").to_lowercase()
         );
     }
 

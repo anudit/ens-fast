@@ -34,17 +34,25 @@ pub struct Snapshot {
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
+pub struct SnapshotData {
+    address: String,
+    expiry: Number,
+    created: Number,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "rocket::serde")]
 pub struct EnsBatchBody {
     ens: Vec<String>,
 }
 
-type HashMapType = HashMap<String, String>;
+type HashMapType = HashMap<String, SnapshotData>;
 
-fn read_from_file<P: AsRef<Path>>(path: P) -> Result<Value, Box<dyn Error>> {
+fn read_from_file<P: AsRef<Path>>(path: P) -> Result<HashMap<String, SnapshotData>, Box<dyn Error>> {
 
     let file = File::open(path)?;
     let reader = BufReader::new(file);
-    let u = from_reader(reader)?;
+    let u:HashMap<String, SnapshotData> = from_reader(reader)?;
     Ok(u)
 }
 
@@ -108,9 +116,9 @@ fn ens_fn(ens_name: String, ens_to_address: &State<HashMapType>) -> Value  {
     let res = ens_to_address.get(&ens_name.to_lowercase());
 
     if res.is_some() {
-        json!({"address": res.unwrap()[1..43]})
+        json!(res.unwrap())
     } else {
-        json!({"address": res})
+        json!({})
     }
 }
 
@@ -125,8 +133,7 @@ fn ens_batch_fn(ens_names: Json<EnsBatchBody>, ens_to_address: &State<HashMapTyp
         let res = ens_to_address.get(&lookup);
 
         if res.is_some() {
-            let res_str = &res.unwrap()[1..43];
-            resp.insert(lookup, json!(res_str));
+            resp.insert(lookup, json!(res.unwrap()));
         } else {
             resp.insert(lookup, json!(false));
         }
@@ -177,22 +184,29 @@ async fn get_hashmap_from_file() -> HashMapType {
     let mut start = Instant::now();
     println!("Reading DB {:?}", profile);
 
+    let payload: HashMap<String, SnapshotData>;
+
     if profile == "dev" {
 
         let json_body = r#"
         {
-            "nick.eth":"0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5",
-            "vitalik.eth":"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+            "nick.eth":{
+                "address": "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5",
+                "created": 1628670616,
+                "expiry": 1628670616
+            },
+            "vitalik.eth":{
+                "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+                "createdAt": 1628670616,
+                "expiry": 1628670616
+            }
         }"#;
 
-        let payload: Value = from_str(json_body).unwrap();
-        for (key, value) in payload.as_object().unwrap() {
-            e_t_a.insert(key.to_string(), value.to_string());
-        }
-        println!("Compiled HashMap");
+        payload = from_str(json_body).unwrap();
 
     }
     else {
+
         let snap_details_path = "./data/snapshots.json";
 
         let snap_data = read_from_file2(snap_details_path).unwrap();
@@ -212,18 +226,19 @@ async fn get_hashmap_from_file() -> HashMapType {
             println!("Using Cached Snapshot");
         }
 
-        let payload = read_from_file(snap_path).unwrap();
-        println!("Read Complete {:?}", start.elapsed());
-
-        start = Instant::now();
-        println!("Compiling HashMap");
-
-        for (key, value) in payload.as_object().unwrap() {
-            e_t_a.insert(key.to_string(), value.to_string());
-        }
-        println!("Compiled HashMap {:?}", start.elapsed());
+        payload = read_from_file(snap_path).unwrap();
 
     }
+
+    println!("Read Complete {:?}", start.elapsed());
+
+    start = Instant::now();
+    println!("Compiling HashMap");
+
+    for (key, value) in payload {
+        e_t_a.insert(key, value);
+    }
+    println!("Compiled HashMap {:?}", start.elapsed());
 
     e_t_a
 
@@ -243,8 +258,8 @@ async fn setup() -> Rocket<rocket::Build> {
 async fn main() -> Result<(), rocket::Error> {
 
     let _rocket = setup().await.launch().await.unwrap();
-
     Ok(())
+
 }
 
 

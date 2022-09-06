@@ -36,7 +36,7 @@ jobs:
         env:
           NODE_OPTIONS: "--max-old-space-size=8192"
           WEB3STORAGE_TOKEN: ${{ secrets.WEB3STORAGE_TOKEN }}
-        run: node ./cron/index.js
+        run: node ./cron/full.js
 
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:

@@ -23,6 +23,7 @@ async function getPage(start, end){
                             expiryDate
                             domain {
                                 name
+                                createdAt
                                 resolvedAddress {
                                     id
                                 }
@@ -58,9 +59,9 @@ function processGraphResp(accounts){
         for (let k = 0; k < registrations.length; k++) {
             const reg = registrations[k];
             const completeData = {
-                resolvedAddress: reg['domain']['resolvedAddress'] == null ? false : reg['domain']['resolvedAddress']['id'],
-                expiryDate: reg['expiryDate'],
-                createdAt: reg['domain']['createdAt'],
+                address: reg['domain']['resolvedAddress'] == null ? "" : reg['domain']['resolvedAddress']['id'],
+                expiry: parseInt(reg['expiryDate']),
+                created: parseInt(reg['domain']['createdAt']),
             }
             etd[reg['domain']['name']] = completeData;
         }
@@ -183,6 +184,17 @@ async function splitAndStart(){
         getData('#8', '0xe'.padEnd(42,'0'), '0xf'.padEnd(42,'f'))
     ]
 
+    // let promiseArray = [
+    //     getData('#1', '0x0'.padEnd(42,'0'), '0x000'.padEnd(42,'f')),
+    //     getData('#2', '0x2'.padEnd(42,'0'), '0x200'.padEnd(42,'f')),
+    //     getData('#3', '0x4'.padEnd(42,'0'), '0x400'.padEnd(42,'f')),
+    //     getData('#4', '0x6'.padEnd(42,'0'), '0x600'.padEnd(42,'f')),
+    //     getData('#5', '0x8'.padEnd(42,'0'), '0x800'.padEnd(42,'f')),
+    //     getData('#6', '0xa'.padEnd(42,'0'), '0xa00'.padEnd(42,'f')),
+    //     getData('#7', '0xc'.padEnd(42,'0'), '0xc00'.padEnd(42,'f')),
+    //     getData('#8', '0xe'.padEnd(42,'0'), '0xe00'.padEnd(42,'f'))
+    // ]
+
     let resp = await Promise.allSettled(promiseArray);
     for (let i = 0; i < resp.length; i++) {
         const respData = resp[i];
@@ -198,7 +210,7 @@ async function splitAndStart(){
     console.log(`Stringifying ${totalCount.toLocaleString()} Domains`);
     ensToAdd = await bfjStringify(ensToAdd);
 
-    let {data: snapshots} = await readFile('snapshots-full.json', json=true);
+    let {data: snapshots} = await readFile('snapshots.json', json=true);
     console.log(`Added ${totalCount - snapshots[snapshots.length-1].domain_count} new domains.`);
 
     const client =  new Web3Storage({ token: WEB3STORAGE_TOKEN });
@@ -218,7 +230,7 @@ async function splitAndStart(){
 
         console.log(`snap`, snap);
         snapshots.push(snap);
-        await saveToFile('snapshots-full.json', JSON.stringify(snapshots, null, 2));
+        await saveToFile('snapshots.json', JSON.stringify(snapshots, null, 2));
 
         console.log('✅ All Done');
     }

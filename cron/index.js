@@ -16,21 +16,15 @@ async function getPage(start, end){
         method: 'POST',
         body: JSON.stringify({
             query: `
-            query($lastID: ID, $end: ID) {
-                domains(first: ${limit}, orderBy: id, orderDirection: asc, where: { id_gt: $lastID, id_lt: $end, name_not: null, resolvedAddress_not: null}) {
-                    id
-                    name
-                    resolvedAddress {
+                query($lastID: ID, $end: ID) {
+                    domains(first: ${limit}, orderBy: id, orderDirection: asc, where: { id_gt: $lastID, id_lt: $end, name_not: null, resolvedAddress_not: null}) {
                         id
-                    }
-                    subdomains {
                         name
                         resolvedAddress {
                             id
                         }
                     }
                 }
-            }
             `,
             variables: {
                 lastID: start,

@@ -27,23 +27,39 @@ Enpoint: http://localhost:8000
 
 - [GET] `/ens/resolve/<ens-name>`
 
-    Example [`http://localhost:8000/ens/resolve/vitalik.eth`](http://localhost:8000/ens/resolve/vitalik.eth)
+    Example [`http://localhost:8000/ens/resolve/vitalik.eth`](http://localhost:8000/ens/resolve/nick.eth)
 
 - [GET] `/ens/resolve-full/<ens-name>`
 
-    Example [`http://localhost:8000/ens/resolve-full/vitalik.eth`](http://localhost:8000/ens/resolve-full/vitalik.eth)
+    Example [`http://localhost:8000/ens/resolve-full/vitalik.eth`](http://localhost:8000/ens/resolve-full/nick.eth)
 
 - [POST] `/ens/resolve/batch`
 
     Example [`http://localhost:8000/ens/resolve/batch`](http://localhost:8000/ens/resolve/batch)
 
     Body,
-    ```
+    ```json
     {
         "ens": [
-            "vitalik.eth",
             "nick.eth",
+            "daws.eth"
         ]
+    }
+    ```
+
+    Resp,
+    ```json
+    {
+        "daws.eth": {
+            "address": "0xc0deaf6bd3f0c6574a6a625ef2f22f62a5150eab",
+            "created": 1632334969,
+            "expiry": 1853233633
+        },
+        "nick.eth": {
+            "address": "0xb8c2c29ee19d8307cb7255e1cd9cbde883a267d5",
+            "created": 1571924851,
+            "expiry": 1698131707
+        }
     }
     ```
 
@@ -52,10 +68,10 @@ Enpoint: http://localhost:8000
     Example [`http://localhost:8000/ens/resolve-full/batch`](http://localhost:8000/ens/resolve-full/batch)
 
     Body,
-    ```
+    ```json
     {
         "ens": [
-            "vitalik.eth",
+            "daws.eth",
             "nick.eth",
         ]
     }

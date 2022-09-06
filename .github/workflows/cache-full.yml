@@ -1,0 +1,43 @@
+name: Update ENS Cache Full
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0,8,16 * * *" # Every 8 hrs.
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: Use Node.js 16.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+
+      - name: Cache pnpm modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-
+      - uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Install Workspace Dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: cd cron && pnpm install
+
+      - name: Cache
+        env:
+          NODE_OPTIONS: "--max-old-space-size=8192"
+          WEB3STORAGE_TOKEN: ${{ secrets.WEB3STORAGE_TOKEN }}
+        run: node ./cron/full.js
+
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Update ENS Database Full

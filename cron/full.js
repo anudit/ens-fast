@@ -214,7 +214,7 @@ async function splitAndStart(){
     let delta = totalCount - snapshots[snapshots.length-1].domain_count;
     console.log(`Added ${delta} new domains.`);
 
-    if (delta<0){
+    if (delta>0){
 
         const client =  new Web3Storage({ token: WEB3STORAGE_TOKEN });
         const fn = `ens-snap-${prettyDate()}.json`;

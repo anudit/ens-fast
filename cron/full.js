@@ -211,33 +211,41 @@ async function splitAndStart(){
     ensToAdd = await bfjStringify(ensToAdd);
 
     let {data: snapshots} = await readFile('snapshots.json', json=true);
-    console.log(`Added ${totalCount - snapshots[snapshots.length-1].domain_count} new domains.`);
+    let delta = totalCount - snapshots[snapshots.length-1].domain_count;
+    console.log(`Added ${delta} new domains.`);
 
-    const client =  new Web3Storage({ token: WEB3STORAGE_TOKEN });
-    const fn = `ens-snap-${prettyDate()}.json`;
-    const files = [new File([ensToAdd], fn)];
-    const cid = await client.put(files);
+    if (delta<0){
 
-    if (cid.slice(0, 3) === 'baf'){
-        console.log('🟢 Snapshot saved to Web3.storage.');
+        const client =  new Web3Storage({ token: WEB3STORAGE_TOKEN });
+        const fn = `ens-snap-${prettyDate()}.json`;
+        const files = [new File([ensToAdd], fn)];
+        const cid = await client.put(files);
 
-        const snap = {
-            domain_count: totalCount,
-            time: Date.now(),
-            file_name: fn,
-            cid: cid,
-        };
+        if (cid.slice(0, 3) === 'baf'){
+            console.log('🟢 Snapshot saved to Web3.storage.');
 
-        console.log(`snap`, snap);
-        snapshots.push(snap);
-        await saveToFile('snapshots.json', JSON.stringify(snapshots, null, 2));
+            const snap = {
+                domain_count: totalCount,
+                time: Date.now(),
+                file_name: fn,
+                cid: cid,
+            };
 
-        console.log('✅ All Done');
+            console.log(`snap`, snap);
+            snapshots.push(snap);
+            await saveToFile('snapshots.json', JSON.stringify(snapshots, null, 2));
+
+            console.log('✅ All Done');
+        }
+        else {
+            console.log('🔴 Failed to save snapshot to Web3.storage')
+            console.log(cid);
+        }
     }
-    else {
-        console.log('🔴 Failed to save snapshot to Web3.storage')
-        console.log(cid);
+    else{
+        console.log('Delta < 0, Skipping Commit.')
     }
+
 
 }
 

@@ -4,6 +4,7 @@ const path = require('path');
 const fetch = require('cross-fetch');
 const bfj = require('bfj');
 const { Web3Storage, File } = require('web3.storage');
+const { isAddress } = require('ethers/lib/utils');
 
 const limit = 1000;
 const { WEB3STORAGE_TOKEN } = process.env;
@@ -171,6 +172,7 @@ async function getData(workerId, start, end){
 
 async function splitAndStart(){
     let ensToAdd = {}
+    let addToEns = {}
     let totalCount = 0
 
     let promiseArray = [
@@ -205,10 +207,19 @@ async function splitAndStart(){
         }
         else console.log(`#${i}`, respData.reason);
     }
+
+    for (const [ens, data] of Object.entries(ensToAdd)) {
+        if(isAddress(data.address)) addToEns[data.address.toLowerCase()] = [];
+    }
+    for (const [ens, data] of Object.entries(ensToAdd)) {
+        if(isAddress(data.address)) addToEns[data.address.toLowerCase()].push(ens);
+    }
+
     resp = null; // free the memory
 
     console.log(`Stringifying ${totalCount.toLocaleString()} Domains`);
     ensToAdd = await bfjStringify(ensToAdd);
+    addToEns = await bfjStringify(addToEns);
 
     let {data: snapshots} = await readFile('snapshots.json', json=true);
     let delta = totalCount - snapshots[snapshots.length-1].domain_count;
@@ -217,8 +228,9 @@ async function splitAndStart(){
     if (delta>0){
 
         const client =  new Web3Storage({ token: WEB3STORAGE_TOKEN });
-        const fn = `ens-snap-${prettyDate()}.json`;
-        const files = [new File([ensToAdd], fn)];
+        const fn = `ensToData-${prettyDate()}.json`;
+        const fn2 = `addToData-${prettyDate()}.json`;
+        const files = [new File([ensToAdd], fn), new File([addToEns], fn2)];
         const cid = await client.put(files);
 
         if (cid.slice(0, 3) === 'baf'){
@@ -227,7 +239,7 @@ async function splitAndStart(){
             const snap = {
                 domain_count: totalCount,
                 time: Date.now(),
-                file_name: fn,
+                file_name: [fn, fn2],
                 cid: cid,
             };
 

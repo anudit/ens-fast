@@ -28,7 +28,7 @@ pub mod ens;
 pub struct Snapshot {
     domain_count: Number,
     time: Number,
-    file_name: String,
+    file_name: Vec<String>,
     cid: String,
 }
 
@@ -211,7 +211,7 @@ async fn get_hashmap_from_file() -> HashMapType {
 
         let snap_data = read_from_file2(snap_details_path).unwrap();
         let cid = snap_data[snap_data.len()-1].cid.to_string();
-        let file_name = snap_data[snap_data.len()-1].file_name.to_string();
+        let file_name = snap_data[snap_data.len()-1].file_name[0].to_string();
 
         println!("Getting Snapshots");
         let url = format!("https://gateway.ipfs.io/ipfs/{ipfs_hash}/{file_name}", ipfs_hash=cid, file_name=file_name);
@@ -220,7 +220,7 @@ async fn get_hashmap_from_file() -> HashMapType {
         let cached = Path::new(&snap_path).exists();
         if !cached {
             println!("Downloading latest snapshot {}", url);
-            download(url, snap_path.to_owned()).await.unwrap();
+            download_with_prog(url.as_str(), snap_path.as_str()).await.unwrap();
         }
         else {
             println!("Using Cached Snapshot");

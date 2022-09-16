@@ -10,7 +10,6 @@ use std::fs::File;
 use std::io::{ Cursor, Write, BufReader};
 use std::path::Path;
 use std::collections::HashMap;
-use std::time::Instant;
 use std::cmp::min;
 
 use rocket::{Rocket, State};
@@ -48,11 +47,11 @@ pub struct EnsBatchBody {
 
 type HashMapType = HashMap<String, SnapshotData>;
 
-fn read_from_file<P: AsRef<Path>>(path: P) -> Result<HashMap<String, SnapshotData>, Box<dyn Error>> {
+fn read_from_file<P: AsRef<Path>>(path: P) -> Result<HashMapType, Box<dyn Error>> {
 
     let file = File::open(path)?;
     let reader = BufReader::new(file);
-    let u:HashMap<String, SnapshotData> = from_reader(reader)?;
+    let u:HashMapType = from_reader(reader)?;
     Ok(u)
 }
 
@@ -61,6 +60,14 @@ fn read_from_file2<P: AsRef<Path>>(path: P) -> Result<Vec<Snapshot>, Box<dyn Err
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     let u: Vec<Snapshot> = from_reader(reader)?;
+    Ok(u)
+}
+
+fn read_from_file3<P: AsRef<Path>>(path: P) -> Result<HashMap<String, Vec<String>>, Box<dyn Error>> {
+
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    let u: HashMap<String, Vec<String>> = from_reader(reader)?;
     Ok(u)
 }
 
@@ -111,15 +118,29 @@ async fn download_with_prog(url: &str, path: &str) -> Result<(), String> {
     Ok(())
 }
 
-#[get("/ens/resolve/<ens_name>")]
-fn ens_fn(ens_name: String, ens_to_address: &State<HashMapType>) -> Value  {
-    let res = ens_to_address.get(&ens_name.to_lowercase());
+#[get("/ens/resolve/<name_or_string>")]
+fn ens_fn(name_or_string: String, ens_to_address: &State<HashMapType>, address_to_ens: &State<HashMap<String, Vec<String>>>) -> Value  {
 
-    if res.is_some() {
-        json!(res.unwrap())
-    } else {
+    if name_or_string.ends_with(".eth") == true {
+        let res = ens_to_address.get(&name_or_string.to_lowercase());
+        if res.is_some() {
+            json!(res.unwrap())
+        } else {
+            json!({})
+        }
+    }
+    else if name_or_string.starts_with("0x") == true && name_or_string.len() == 42  {
+        let res = address_to_ens.get(&name_or_string.to_lowercase());
+        if res.is_some() {
+            json!(res.unwrap())
+        } else {
+            json!({})
+        }
+    }
+    else {
         json!({})
     }
+
 }
 
 #[post("/ens/resolve/batch", format = "application/json", data = "<ens_names>")]
@@ -172,19 +193,17 @@ fn stats_fn(ens_to_address: &State<HashMapType>) -> Value  {
     json!({"count": ens_to_address.len()})
 }
 
-async fn get_hashmap_from_file() -> HashMapType {
+async fn get_hashmap_from_file() -> (HashMapType, HashMap<String, Vec<String>>) {
 
     let mut e_t_a: HashMapType = HashMap::new();
+    let mut a_t_d: HashMap<String, Vec<String>> = HashMap::new();
 
     let profile = match env::var("PROFILE") {
         Ok(v) => v,
         Err(_) => "dev".to_string()
     };
 
-    let mut start = Instant::now();
     println!("Reading DB {:?}", profile);
-
-    let payload: HashMap<String, SnapshotData>;
 
     if profile == "dev" {
 
@@ -202,20 +221,29 @@ async fn get_hashmap_from_file() -> HashMapType {
             }
         }"#;
 
-        payload = from_str(json_body).unwrap();
+        e_t_a = from_str(json_body).unwrap();
 
+        let json_body2 = r#"
+        {
+            "0xb8c2c29ee19d8307cb7255e1cd9cbde883a267d5": ["nick.eth"],
+            "0xc0deaf6bd3f0c6574a6a625ef2f22f62a5150eab": ["daws.eth"]
+        }"#;
+
+        a_t_d = from_str(json_body2).unwrap();
     }
     else {
 
         let snap_details_path = "./data/snapshots.json";
 
         let snap_data = read_from_file2(snap_details_path).unwrap();
+
         let cid = snap_data[snap_data.len()-1].cid.to_string();
-        let file_name = snap_data[snap_data.len()-1].file_name[0].to_string();
 
         println!("Getting Snapshots");
+
+        let file_name = snap_data[snap_data.len()-1].file_name[0].to_string();
         let url = format!("https://gateway.ipfs.io/ipfs/{ipfs_hash}/{file_name}", ipfs_hash=cid, file_name=file_name);
-        let snap_path = format!("./data/{cid}.json", cid = cid);
+        let snap_path = format!("./data/{cid}-{fn}.json", cid = cid, fn=file_name);
 
         let cached = Path::new(&snap_path).exists();
         if !cached {
@@ -223,33 +251,41 @@ async fn get_hashmap_from_file() -> HashMapType {
             download_with_prog(url.as_str(), snap_path.as_str()).await.unwrap();
         }
         else {
-            println!("Using Cached Snapshot");
+            println!("ensToAdd / Using Cached Snapshot");
         }
 
-        payload = read_from_file(snap_path).unwrap();
+        e_t_a = read_from_file(snap_path).unwrap();
+
+        let file_name2 = snap_data[snap_data.len()-1].file_name[1].to_string();
+        let url = format!("https://gateway.ipfs.io/ipfs/{ipfs_hash}/{file_name}", ipfs_hash=cid, file_name=file_name2);
+        let snap_path = format!("./data/{cid}-{fn}.json", cid = cid, fn=file_name2);
+
+        let cached = Path::new(&snap_path).exists();
+        if !cached {
+            println!("Downloading latest snapshot {}", url);
+            download_with_prog(url.as_str(), snap_path.as_str()).await.unwrap();
+        }
+        else {
+            println!("addToData / Using Cached Snapshot");
+        }
+
+        a_t_d = read_from_file3(snap_path).unwrap();
 
     }
 
-    println!("Read Complete {:?}", start.elapsed());
+    println!("Compiled Maps.");
 
-    start = Instant::now();
-    println!("Compiling HashMap");
-
-    for (key, value) in payload {
-        e_t_a.insert(key, value);
-    }
-    println!("Compiled HashMap {:?}", start.elapsed());
-
-    e_t_a
+    (e_t_a, a_t_d)
 
 }
 
 async fn setup() -> Rocket<rocket::Build> {
     dotenv().ok();
-    let ens_to_address: HashMapType = get_hashmap_from_file().await;
+    let (ens_to_address, address_to_ens) = get_hashmap_from_file().await;
 
     rocket::build()
         .manage(ens_to_address)
+        .manage(address_to_ens)
         .mount("/", routes![ens_fn, ens_batch_fn, ens_batch_full_fn, ens_full_fn, stats_fn, ping_fn])
 
 }

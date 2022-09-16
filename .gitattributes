@@ -1,1 +1,1 @@
-cron/* linguist-vendored
+cron/** linguist-detectable=false

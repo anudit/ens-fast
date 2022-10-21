@@ -2,8 +2,6 @@ name: Update ENS Cache
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 0,6,12,18 * * *" # Every 6 hrs.
 
 jobs:
   build:
